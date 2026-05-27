@@ -14,7 +14,7 @@ import SakuraCanvas from '@/components/SakuraCanvas.vue'
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&family=Ma+Shan+Zheng&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap');
 
 body {
   margin: 0;

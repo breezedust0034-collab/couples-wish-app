@@ -1,5 +1,5 @@
 <template>
-  <canvas ref="canvasRef" class="sakura-canvas" />
+  <canvas ref="canvasRef" class="bg-canvas" />
 </template>
 
 <script setup>
@@ -7,50 +7,63 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const canvasRef = ref(null)
 let animationId = null
-let petals = []
+let particles = []
 
 function randomRange(min, max) {
   return Math.random() * (max - min) + min
 }
 
-function createPetal(canvas) {
-  const size = randomRange(8, 18)
+function createParticle(canvas) {
+  const type = Math.random()
+  const isWarm = type > 0.5
+
   return {
     x: randomRange(0, canvas.width),
-    y: randomRange(-100, -10),
-    size,
-    speedY: randomRange(0.5, 1.2),
-    speedX: randomRange(-0.3, 0.3),
-    rotation: randomRange(0, 360),
-    rotationSpeed: randomRange(-2, 2),
-    opacity: randomRange(0.5, 0.85),
-    swayAmp: randomRange(40, 80),
-    swayFreq: randomRange(0.005, 0.012),
-    swayPhase: randomRange(0, Math.PI * 2),
+    y: randomRange(canvas.height * 0.2, canvas.height),
+    baseRadius: randomRange(2, 6),
+    glowRadius: randomRange(20, 50),
+    speedX: randomRange(-0.2, 0.2),
+    speedY: randomRange(-0.4, -0.08),
+    targetOpacity: randomRange(0.2, 0.5),
+    hue: isWarm ? randomRange(335, 360) : randomRange(15, 45),
+    saturation: randomRange(60, 85),
+    lightness: randomRange(82, 95),
+    phase: randomRange(0, Math.PI * 2),
+    speed: randomRange(0.003, 0.01),
+    amplitude: randomRange(20, 50),
+    life: 0,
+    maxLife: randomRange(300, 700),
   }
 }
 
-function drawPetal(ctx, petal, time) {
-  const sway = Math.sin(time * petal.swayFreq + petal.swayPhase) * petal.swayAmp
-  const s = petal.size / 2
+function drawParticle(ctx, p) {
+  const sway = Math.sin(p.phase + p.life * p.speed) * p.amplitude
+  const drawX = p.x + sway
+  const drawY = p.y + p.life * p.speedY
+
+  const lifeRatio = p.life / p.maxLife
+  let opacity = p.targetOpacity
+  if (lifeRatio < 0.15) opacity = p.targetOpacity * (lifeRatio / 0.15)
+  if (lifeRatio > 0.85) opacity = p.targetOpacity * (1 - (lifeRatio - 0.85) / 0.15)
 
   ctx.save()
-  ctx.translate(petal.x + sway, petal.y)
-  ctx.rotate((petal.rotation * Math.PI) / 180)
-  ctx.globalAlpha = petal.opacity
 
-  const gradient = ctx.createRadialGradient(0, -s * 0.3, 0, 0, 0, s * 1.2)
-  gradient.addColorStop(0, '#FFF0F5')
-  gradient.addColorStop(0.4, '#FADADD')
-  gradient.addColorStop(1, '#F0B8C8')
+  const gradient = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, p.glowRadius)
+  gradient.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${opacity})`)
+  gradient.addColorStop(0.3, `hsla(${p.hue}, ${p.saturation - 15}%, ${p.lightness - 8}%, ${opacity * 0.4})`)
+  gradient.addColorStop(1, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, 0)`)
 
   ctx.fillStyle = gradient
   ctx.beginPath()
-  ctx.moveTo(0, -s)
-  ctx.bezierCurveTo(s * 1.2, -s * 0.6, s * 0.8, s * 0.4, 0, s * 0.8)
-  ctx.bezierCurveTo(-s * 0.8, s * 0.4, -s * 1.2, -s * 0.6, 0, -s)
-  ctx.closePath()
+  ctx.arc(drawX, drawY, p.glowRadius, 0, Math.PI * 2)
   ctx.fill()
+
+  ctx.globalAlpha = opacity * 0.7
+  ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${Math.min(p.lightness + 5, 100)}%, 0.5)`
+  ctx.beginPath()
+  ctx.arc(drawX, drawY, p.baseRadius * 0.3, 0, Math.PI * 2)
+  ctx.fill()
+
   ctx.restore()
 }
 
@@ -61,17 +74,21 @@ function animate() {
   canvas.width = window.innerWidth
   canvas.height = window.innerHeight
 
-  const count = window.innerWidth < 400 ? 8 : window.innerWidth < 768 ? 12 : 18
-  while (petals.length < count) petals.push(createPetal(canvas))
+  const count = window.innerWidth < 400 ? 12 : window.innerWidth < 768 ? 22 : 30
 
-  const time = Date.now()
+  while (particles.length < count) {
+    const p = createParticle(canvas)
+    p.life = randomRange(0, p.maxLife * 0.5)
+    particles.push(p)
+  }
 
-  petals = petals.filter(petal => {
-    petal.y += petal.speedY
-    petal.x += petal.speedX
-    petal.rotation += petal.rotationSpeed * 0.5
-    drawPetal(ctx, petal, time)
-    return petal.y < canvas.height + 50
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  particles = particles.filter(p => {
+    p.life++
+    p.x += p.speedX
+    drawParticle(ctx, p)
+    return p.life < p.maxLife && p.y + p.life * p.speedY > -60 && p.x > -100 && p.x < canvas.width + 100
   })
 
   animationId = requestAnimationFrame(animate)
@@ -82,13 +99,13 @@ onUnmounted(() => { if (animationId) cancelAnimationFrame(animationId) })
 </script>
 
 <style scoped>
-.sakura-canvas {
+.bg-canvas {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 </style>

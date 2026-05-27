@@ -1,30 +1,30 @@
 <template>
   <div class="home-page min-h-dvh px-4 pb-24 pt-8 relative z-10">
-    <header class="text-center mb-8">
+    <header class="text-center mb-6">
       <h1 class="text-3xl font-brand text-theme mb-1">只为你</h1>
       <p class="text-text-secondary text-xs">{{ auth.displayName }}的心愿空间</p>
     </header>
 
-    <div class="stats-card mb-8">
+    <div class="stats-card mb-6">
       <div class="flex justify-around text-center">
         <div>
-          <p class="text-3xl font-display text-theme-deep font-semibold">{{ stats.daysTogether || 0 }}</p>
+          <p class="days-number">{{ stats.daysTogether || 0 }}</p>
           <p class="text-xs text-text-secondary">在一起天数</p>
         </div>
         <div class="w-px bg-accent-pink/30"></div>
         <div>
-          <p class="text-3xl font-display text-gold font-semibold">{{ stats.totalDone || 0 }}</p>
+          <p class="days-number text-gold">{{ stats.totalDone || 0 }}</p>
           <p class="text-xs text-text-secondary">已完成心愿</p>
         </div>
         <div class="w-px bg-accent-pink/30"></div>
         <div>
-          <p class="text-3xl font-display text-theme font-semibold">{{ wishesStore.pendingCount }}</p>
+          <p class="days-number text-theme">{{ wishesStore.pendingCount }}</p>
           <p class="text-xs text-text-secondary">待处理</p>
         </div>
       </div>
     </div>
 
-    <div class="action-buttons flex flex-col gap-4">
+    <div class="action-buttons flex flex-col gap-3">
       <button
         @click="router.push({ name: 'wish-new' })"
         class="btn-primary w-full py-4 rounded-xl text-white text-base font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2"
@@ -90,6 +90,13 @@ async function loadStats() {
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(8px);
   padding: 24px 20px;
+}
+
+.days-number {
+  font-family: "Ma Shan Zheng", cursive;
+  font-size: 2.5rem;
+  color: var(--color-theme-deep, #C4637E);
+  line-height: 1;
 }
 
 .btn-primary {
