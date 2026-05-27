@@ -87,8 +87,8 @@
     </form>
 
     <div v-if="showSuccess" class="success-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg-main/90 backdrop-blur-sm">
-      <p class="text-theme text-lg font-semibold mb-2">心愿已悄悄送出</p>
-      <p class="text-text-secondary text-sm">等 TA 来接 🌸</p>
+      <p class="text-theme text-lg font-semibold mb-1">心愿已悄悄送出</p>
+      <p class="text-text-secondary text-sm">{{ notifyStatus }}</p>
       <button @click="goHome" class="mt-6 px-6 py-2.5 rounded-xl bg-theme text-white text-sm active:scale-95 transition-transform">返回主页</button>
     </div>
   </div>
@@ -105,6 +105,7 @@ const router = useRouter()
 const wishesStore = useWishesStore()
 const submitting = ref(false)
 const showSuccess = ref(false)
+const notifyStatus = ref('')
 
 const categories = [
   { value: 'eat', icon: '🍜', label: '吃什么' },
@@ -133,6 +134,8 @@ async function handleSubmit() {
       urgency: form.urgency,
       note: form.note || null,
     })
+    const success = wishesStore.lastNotify?.success
+    notifyStatus.value = success ? 'TA已收到微信通知' : 'TA可能未收到通知（请检查PushDeer设置）'
     showSuccess.value = true
   } catch (err) {
     alert('提交失败：' + err.message)

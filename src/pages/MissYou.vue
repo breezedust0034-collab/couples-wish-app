@@ -72,8 +72,8 @@
     </div>
 
     <div v-if="showSuccess" class="success-overlay fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg-main/90 backdrop-blur-sm">
-      <p class="text-red-500 text-lg font-semibold mb-2">想念已送达 💕</p>
-      <p class="text-text-secondary text-sm">TA会收到的</p>
+      <p class="text-theme text-lg font-semibold mb-1">想念已送达 💕</p>
+      <p class="text-text-secondary text-sm">{{ notifyStatus }}</p>
       <button @click="goHome" class="mt-6 px-6 py-2.5 rounded-xl bg-theme text-white text-sm active:scale-95 transition-transform">返回主页</button>
     </div>
   </div>
@@ -83,15 +83,14 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, Image as ImageIcon } from 'lucide-vue-next'
-import { useWishesStore } from '@/store/wishes'
 import { useAuthStore } from '@/store/auth'
 import { notifyMiss } from '@/utils/notify'
 
 const router = useRouter()
-const wishesStore = useWishesStore()
 const auth = useAuthStore()
 const submitting = ref(false)
 const showSuccess = ref(false)
+const notifyStatus = ref('')
 const imageInput = ref(null)
 
 const form = reactive({
@@ -144,7 +143,8 @@ async function handleSend() {
     allRecords.unshift(record)
     localStorage.setItem('love-action-miss', JSON.stringify(allRecords))
 
-    notifyMiss(auth.identity, form.level, form.message)
+    const success = await notifyMiss(auth.identity, form.level, form.message)
+    notifyStatus.value = success ? 'TA已收到微信通知' : 'TA可能未收到通知（请检查PushDeer设置）'
 
     showSuccess.value = true
     form.message = ''

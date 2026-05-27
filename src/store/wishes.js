@@ -20,6 +20,7 @@ export const useWishesStore = defineStore('wishes', {
   state: () => ({
     wishes: loadWishes(),
     loading: false,
+    lastNotify: null,
   }),
 
   getters: {
@@ -56,7 +57,8 @@ export const useWishesStore = defineStore('wishes', {
       }
       this.wishes = [newWish, ...this.wishes]
       saveWishes(this.wishes)
-      notifyNewWish(auth.identity, wishData.title, wishData.category, wishData.note)
+      const success = await notifyNewWish(auth.identity, wishData.title, wishData.category, wishData.note)
+      this.lastNotify = { type: 'newWish', success }
       return newWish
     },
 
@@ -67,7 +69,8 @@ export const useWishesStore = defineStore('wishes', {
         wish.reply_msg = replyMsg
         wish.confirm_time = confirmTime
         saveWishes(this.wishes)
-        notifyConfirm(wish.author, wish.title, replyMsg)
+        const success = await notifyConfirm(wish.author, wish.title, replyMsg)
+        this.lastNotify = { type: 'confirm', success }
       }
     },
 
@@ -77,7 +80,8 @@ export const useWishesStore = defineStore('wishes', {
         wish.status = 'rejected'
         wish.reply_msg = replyMsg
         saveWishes(this.wishes)
-        notifyReject(wish.author, wish.title, replyMsg)
+        const success = await notifyReject(wish.author, wish.title, replyMsg)
+        this.lastNotify = { type: 'reject', success }
       }
     },
 
@@ -88,7 +92,8 @@ export const useWishesStore = defineStore('wishes', {
         wish.done_msg = doneMsg
         wish.done_at = new Date().toISOString()
         saveWishes(this.wishes)
-        notifyComplete(wish.author, wish.title, doneMsg)
+        const success = await notifyComplete(wish.author, wish.title, doneMsg)
+        this.lastNotify = { type: 'complete', success }
       }
     },
 
