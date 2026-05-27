@@ -7,23 +7,33 @@ const PUSH_URL = 'https://api2.pushdeer.com/message/push'
 const categoryNames = { eat: '🍜 吃什么', play: '🎮 玩什么', do: '🌸 做什么' }
 
 async function sendTo(key, title, content) {
+  const url = `${PUSH_URL}?pushkey=${encodeURIComponent(key)}&text=${encodeURIComponent(title)}&desp=${encodeURIComponent(content)}`
+
   try {
-    const response = await fetch(PUSH_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pushkey: key, text: title, desp: content }),
-    })
-    const data = await response.json()
-    return data.code === 0
+    const resp = await fetch(url, { method: 'POST' })
+    const data = await resp.json()
+    if (data.code === 0 || data.content?.result?.length > 0) return true
   } catch {
-    return false
   }
+
+  try {
+    await fetch(url, { method: 'POST', mode: 'no-cors' })
+    return true
+  } catch {
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve(true)
+    img.onerror = () => resolve(false)
+    img.src = url
+    setTimeout(() => resolve(false), 5000)
+  })
 }
 
 export async function sendNotify(author, title, content) {
   const target = author === 'her' ? 'him' : 'her'
-  const success = await sendTo(PUSH_KEYS[target], title, content)
-  return success
+  return await sendTo(PUSH_KEYS[target], title, content)
 }
 
 export async function notifyNewWish(author, title, category, note) {
