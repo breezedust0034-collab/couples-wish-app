@@ -18,7 +18,7 @@
         </div>
         <div class="w-px bg-accent-pink/30"></div>
         <div>
-          <p class="days-number text-theme">{{ wishesStore.pendingCount }}</p>
+          <p class="days-number text-theme">{{ wishesStore.pendingCount + missCount }}</p>
           <p class="text-xs text-text-secondary">待处理</p>
         </div>
       </div>
@@ -27,34 +27,55 @@
     <div class="action-buttons flex flex-col gap-3">
       <button
         @click="router.push({ name: 'wish-new' })"
-        class="btn-primary w-full py-4 rounded-xl text-white text-base font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2"
+        class="btn-wish w-full py-4 rounded-xl text-white text-base font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2 pulse-medium"
       >
         <span class="text-xl">🌸</span> 许下心愿
       </button>
 
       <button
-        @click="router.push({ name: 'wish-inbox' })"
-        class="btn-secondary w-full py-4 rounded-xl text-theme text-base font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2 relative"
+        @click="router.push({ name: 'miss-you' })"
+        class="btn-miss w-full py-5 rounded-xl text-white text-lg font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2 pulse-strong"
       >
-        <span class="text-xl">💌</span> TA的心愿
-        <span v-if="wishesStore.pendingCount > 0" class="badge-red">
-          {{ wishesStore.pendingCount }}
-        </span>
+        <span class="text-2xl">💕</span> 我想你了
       </button>
 
-      <button
-        @click="router.push({ name: 'wish-sent' })"
-        class="btn-secondary w-full py-4 rounded-xl text-theme text-base font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2"
-      >
-        <span class="text-xl">📝</span> 我发出的
-      </button>
+      <div class="flex gap-3">
+        <button
+          @click="router.push({ name: 'wish-inbox' })"
+          class="btn-secondary flex-1 py-4 rounded-xl text-theme text-sm font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-1.5 relative pulse-soft"
+        >
+          <span>💌</span> TA的心愿
+          <span v-if="wishesStore.pendingCount > 0" class="badge-red">
+            {{ wishesStore.pendingCount }}
+          </span>
+        </button>
 
-      <button
-        @click="router.push({ name: 'memories' })"
-        class="btn-secondary w-full py-4 rounded-xl text-gold text-base font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-2"
-      >
-        <span class="text-xl">📖</span> 回忆册
-      </button>
+        <button
+          @click="router.push({ name: 'miss-received' })"
+          class="btn-secondary flex-1 py-4 rounded-xl text-red-400 text-sm font-semibold shadow-lg active:scale-96 transition-transform flex items-center justify-center gap-1.5 relative pulse-soft"
+        >
+          <span>💌</span> 收到的想念
+          <span v-if="missCount > 0" class="badge-miss">
+            {{ missCount }}
+          </span>
+        </button>
+      </div>
+
+      <div class="flex gap-3">
+        <button
+          @click="router.push({ name: 'wish-sent' })"
+          class="btn-secondary flex-1 py-3.5 rounded-xl text-theme text-sm font-semibold shadow active:scale-96 transition-transform flex items-center justify-center gap-1.5 pulse-soft"
+        >
+          <span>📝</span> 我发出的
+        </button>
+
+        <button
+          @click="router.push({ name: 'memories' })"
+          class="btn-secondary flex-1 py-3.5 rounded-xl text-gold text-sm font-semibold shadow active:scale-96 transition-transform flex items-center justify-center gap-1.5 pulse-soft"
+        >
+          <span>📖</span> 回忆册
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -69,16 +90,24 @@ const router = useRouter()
 const auth = useAuthStore()
 const wishesStore = useWishesStore()
 const stats = ref({ daysTogether: 0, totalDone: 0, eatCount: 0, playCount: 0, doCount: 0 })
+const missCount = ref(0)
 
 onMounted(async () => {
   await Promise.all([
     wishesStore.fetchWishes(),
     loadStats(),
+    loadMissCount(),
   ])
 })
 
 async function loadStats() {
   stats.value = await wishesStore.fetchStats()
+}
+
+function loadMissCount() {
+  const all = JSON.parse(localStorage.getItem('love-action-miss') || '[]')
+  const other = auth.identity === 'her' ? 'him' : 'her'
+  missCount.value = all.filter(r => r.author === other).length
 }
 </script>
 
@@ -99,8 +128,12 @@ async function loadStats() {
   line-height: 1;
 }
 
-.btn-primary {
+.btn-wish {
   background: linear-gradient(135deg, #E87FA5, #C4637E);
+}
+
+.btn-miss {
+  background: linear-gradient(135deg, #D9305C, #E87FA5);
 }
 
 .btn-secondary {
@@ -111,7 +144,7 @@ async function loadStats() {
 
 .badge-red {
   position: absolute;
-  right: 16px;
+  right: 10px;
   top: -6px;
   background: #E87FA5;
   color: white;
@@ -122,5 +155,47 @@ async function loadStats() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.badge-miss {
+  position: absolute;
+  right: 10px;
+  top: -6px;
+  background: #D9305C;
+  color: white;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-strong {
+  animation: pulse-strong 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-strong {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.pulse-medium {
+  animation: pulse-medium 2s ease-in-out infinite;
+}
+
+@keyframes pulse-medium {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+
+.pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.01); }
 }
 </style>
