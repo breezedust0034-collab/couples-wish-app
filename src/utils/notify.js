@@ -1,6 +1,6 @@
 const PUSH_KEYS = {
-  her: 'PDU41661TYV0ZDt1g1DnAOflkr2Nv7SwIwMfnDHpq',
-  him: 'PDU41664TQRnqy1EcWmVtRHDDgIIxFzoaZVJL5L2z',
+  her: 'PDU41664TQRnqy1EcWmVtRHDDgIIxFzoaZVJL5L2z',
+  him: 'PDU41661TYV0ZDt1g1DnAOflkr2Nv7SwIwMfnDHpq',
 }
 const PUSH_URL = 'https://api2.pushdeer.com/message/push'
 
@@ -13,22 +13,24 @@ async function sendTo(key, title, content) {
     const resp = await fetch(url, { method: 'POST' })
     const data = await resp.json()
     if (data.code === 0 || data.content?.result?.length > 0) return true
-  } catch {
+  } catch (e) {
+    if (e.name === 'TypeError') {
+      try {
+        await fetch(url, { method: 'POST', mode: 'no-cors' })
+        return true
+      } catch {
+        return new Promise((resolve) => {
+          const img = new Image()
+          img.onload = () => resolve(true)
+          img.onerror = () => resolve(false)
+          img.src = url
+          setTimeout(() => resolve(false), 5000)
+        })
+      }
+    }
   }
 
-  try {
-    await fetch(url, { method: 'POST', mode: 'no-cors' })
-    return true
-  } catch {
-  }
-
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => resolve(true)
-    img.onerror = () => resolve(false)
-    img.src = url
-    setTimeout(() => resolve(false), 5000)
-  })
+  return false
 }
 
 export async function sendNotify(author, title, content) {
