@@ -13,11 +13,7 @@
     </div>
 
     <div v-else class="space-y-4">
-      <div
-        v-for="record in records"
-        :key="record.id"
-        class="miss-card p-5"
-      >
+      <div v-for="record in records" :key="record.id" class="miss-card p-5">
         <div class="flex items-center gap-3 mb-3">
           <span class="author-tag text-xs px-2 py-0.5 rounded-full bg-bg-secondary">{{ record.author === 'her' ? '她' : '他' }}</span>
           <span class="text-xs text-text-secondary">{{ formatDate(record.created_at) }}</span>
@@ -33,25 +29,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft } from 'lucide-vue-next'
-import { useAuthStore } from '@/store/auth'
+import { useMissStore } from '@/store/miss'
 import dayjs from 'dayjs'
 
 const router = useRouter()
-const auth = useAuthStore()
-const records = ref([])
+const missStore = useMissStore()
+const records = computed(() => missStore.otherRecords)
 
-onMounted(() => {
-  loadRecords()
-})
-
-function loadRecords() {
-  const all = JSON.parse(localStorage.getItem('love-action-miss') || '[]')
-  const other = auth.identity === 'her' ? 'him' : 'her'
-  records.value = all.filter(r => r.author === other)
-}
+onMounted(() => { missStore.fetchRecords() })
 
 function formatDate(dateStr) {
   return dayjs(dateStr).format('MM月DD日 HH:mm')
@@ -72,8 +60,5 @@ function levelBadgeClass(level) {
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(8px);
 }
-
-.miss-image {
-  width: 100%;
-}
+.miss-image { width: 100%; }
 </style>

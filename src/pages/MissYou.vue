@@ -14,14 +14,7 @@
           <span class="level-number" :class="levelClass">{{ form.level }}</span>
           <span class="level-unit">/ 10</span>
         </div>
-        <input
-          type="range"
-          v-model="form.level"
-          min="0"
-          max="10"
-          step="1"
-          class="level-slider w-full"
-        />
+        <input type="range" v-model="form.level" min="0" max="10" step="1" class="level-slider w-full" />
         <div class="flex justify-between text-xs text-text-secondary mt-1">
           <span>一点点</span>
           <span>超级想你</span>
@@ -30,26 +23,14 @@
 
       <div class="form-card p-5">
         <label class="block text-sm font-medium text-text-primary mb-2">想说的话</label>
-        <textarea
-          v-model="form.message"
-          maxlength="300"
-          rows="4"
-          placeholder="此刻想TA的心情..."
-          class="w-full px-4 py-3 rounded-xl bg-bg-main border border-accent-pink/30 focus:border-theme focus:outline-none text-sm resize-none"
-        ></textarea>
+        <textarea v-model="form.message" maxlength="300" rows="4" placeholder="此刻想TA的心情..." class="w-full px-4 py-3 rounded-xl bg-bg-main border border-accent-pink/30 focus:border-theme focus:outline-none text-sm resize-none"></textarea>
         <p class="text-xs text-text-secondary mt-1 text-right">{{ form.message.length }}/300</p>
       </div>
 
       <div class="form-card p-5">
         <label class="block text-sm font-medium text-text-primary mb-2">配一张图（可选）</label>
         <div class="image-upload-area" @click="triggerImageUpload">
-          <input
-            ref="imageInput"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="handleImageSelect"
-          />
+          <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="handleImageSelect" />
           <img v-if="form.image" :src="form.image" class="upload-preview" />
           <div v-else class="upload-placeholder">
             <ImageIcon :size="32" stroke="#E87FA5" stroke-width="1" />
@@ -61,12 +42,7 @@
         </div>
       </div>
 
-      <button
-        type="button"
-        @click="handleSend"
-        class="btn-miss-send w-full py-5 rounded-xl text-white text-lg font-semibold shadow-lg pulse-strong active:scale-96 transition-transform"
-        :disabled="submitting"
-      >
+      <button type="button" @click="handleSend" class="btn-miss-send w-full py-5 rounded-xl text-white text-lg font-semibold shadow-lg pulse-strong active:scale-96 transition-transform" :disabled="submitting">
         {{ submitting ? '发送中...' : '我想你了 💕' }}
       </button>
     </div>
@@ -83,21 +59,16 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChevronLeft, Image as ImageIcon } from 'lucide-vue-next'
-import { useAuthStore } from '@/store/auth'
-import { notifyMiss } from '@/utils/notify'
+import { useMissStore } from '@/store/miss'
 
 const router = useRouter()
-const auth = useAuthStore()
+const missStore = useMissStore()
 const submitting = ref(false)
 const showSuccess = ref(false)
 const notifyStatus = ref('')
 const imageInput = ref(null)
 
-const form = reactive({
-  level: 5,
-  message: '',
-  image: '',
-})
+const form = reactive({ level: 5, message: '', image: '' })
 
 const levelClass = computed(() => {
   const l = form.level
@@ -107,45 +78,22 @@ const levelClass = computed(() => {
   return 'level-none'
 })
 
-function triggerImageUpload() {
-  imageInput.value?.click()
-}
+function triggerImageUpload() { imageInput.value?.click() }
 
 function handleImageSelect(e) {
   const file = e.target.files?.[0]
   if (!file) return
-  if (file.size > 2 * 1024 * 1024) {
-    alert('图片不能超过 2MB')
-    return
-  }
+  if (file.size > 2 * 1024 * 1024) { alert('图片不能超过 2MB'); return }
   const reader = new FileReader()
-  reader.onload = () => {
-    form.image = reader.result
-  }
+  reader.onload = () => { form.image = reader.result }
   reader.readAsDataURL(file)
 }
 
 async function handleSend() {
   submitting.value = true
   try {
-    const record = {
-      id: 'm' + Date.now(),
-      author: auth.identity,
-      type: 'miss',
-      level: form.level,
-      message: form.message || null,
-      image: form.image || null,
-      status: 'sent',
-      created_at: new Date().toISOString(),
-    }
-
-    const allRecords = loadMissRecords()
-    allRecords.unshift(record)
-    localStorage.setItem('love-action-miss', JSON.stringify(allRecords))
-
-    const success = await notifyMiss(auth.identity, form.level, form.message)
-    notifyStatus.value = success ? 'TA已收到微信通知' : 'TA可能未收到通知（请检查PushDeer设置）'
-
+    await missStore.sendMiss(form.level, form.message, form.image)
+    notifyStatus.value = 'TA会收到的'
     showSuccess.value = true
     form.message = ''
     form.image = ''
@@ -157,17 +105,7 @@ async function handleSend() {
   }
 }
 
-function loadMissRecords() {
-  const stored = localStorage.getItem('love-action-miss')
-  if (stored) {
-    try { return JSON.parse(stored) } catch { return [] }
-  }
-  return []
-}
-
-function goHome() {
-  router.push({ name: 'home' })
-}
+function goHome() { router.push({ name: 'home' }) }
 </script>
 
 <style scoped>
@@ -178,89 +116,20 @@ function goHome() {
   box-shadow: var(--shadow-card);
   backdrop-filter: blur(8px);
 }
-
-.level-display {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-}
-
-.level-number {
-  font-family: "Ma Shan Zheng", cursive;
-  font-size: 4rem;
-  line-height: 1;
-  transition: color 0.3s;
-}
-
+.level-display { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+.level-number { font-family: "Ma Shan Zheng", cursive; font-size: 4rem; line-height: 1; transition: color 0.3s; }
 .level-high { color: #D9305C; }
 .level-mid { color: #E87FA5; }
 .level-low { color: #F4B8CE; }
 .level-none { color: #E0D0D5; }
-
-.level-unit {
-  font-size: 1rem;
-  color: #9C7080;
-}
-
-.level-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 8px;
-  border-radius: 4px;
-  background: linear-gradient(to right, #FDE8F0, #E87FA5, #D9305C);
-  outline: none;
-}
-
-.level-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: white;
-  border: 3px solid #E87FA5;
-  box-shadow: 0 2px 8px rgba(232, 127, 165, 0.3);
-  cursor: pointer;
-}
-
-.image-upload-area {
-  border: 2px dashed rgba(232, 127, 165, 0.3);
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.image-upload-area:hover {
-  border-color: #E87FA5;
-}
-
-.upload-preview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-miss-send {
-  background: linear-gradient(135deg, #D9305C, #E87FA5);
-}
-
-.pulse-strong {
-  animation: pulse-strong 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-strong {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-}
+.level-unit { font-size: 1rem; color: #9C7080; }
+.level-slider { -webkit-appearance: none; appearance: none; height: 8px; border-radius: 4px; background: linear-gradient(to right, #FDE8F0, #E87FA5, #D9305C); outline: none; }
+.level-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; border-radius: 50%; background: white; border: 3px solid #E87FA5; box-shadow: 0 2px 8px rgba(232, 127, 165, 0.3); cursor: pointer; }
+.image-upload-area { border: 2px dashed rgba(232, 127, 165, 0.3); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+.image-upload-area:hover { border-color: #E87FA5; }
+.upload-preview { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: cover; }
+.upload-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.btn-miss-send { background: linear-gradient(135deg, #D9305C, #E87FA5); }
+.pulse-strong { animation: pulse-strong 1.5s ease-in-out infinite; }
+@keyframes pulse-strong { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
 </style>
